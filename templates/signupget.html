@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+      crossorigin="anonymous"
+    />
+    <title>Login Page</title>
+    <style>
+      .main-container {
+        height: 100vh;
+      }
+
+      .container {
+        max-width: 533px;
+        border: 2px solid greenyellow;
+        padding: 20px;
+        border-radius: 20px;
+      }
+      body {
+        background: url(./golang.jpg);
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="d-flex align-items-center main-container">
+      <div class="container">
+        <form method="post">
+          <div class="mb-3">
+            <label for="exampleInputEmail1" class="form-label">Name</label>
+            <input
+              type="text"
+              name="name"
+              class="form-control"
+              id="exampleInputEmail1"
+              aria-describedby="emailHelp"
+            />
+          </div>
+          <div class="mb-3">
+            <label for="exampleInputEmail2" class="form-label"
+              >Email address</label
+            >
+            <input
+              type="email"
+              name="username"
+              class="form-control"
+              id="exampleInputEmai21"
+              aria-describedby="emailHelp"
+            />
+          </div>
+          <div class="mb-3">
+            <label for="exampleInputPassword1" class="form-label"
+              >Password</label
+            >
+            <input
+              type="password"
+              name="password"
+              class="form-control"
+              id="exampleInputPassword1"
+            />
+          </div>
+          <div class="d-flex justify-content-between">
+            <button type="submit" class="btn btn-primary">Sign Up</button>
+            <a class="btn btn-primary" href="/login">login</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
