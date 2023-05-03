@@ -13,6 +13,11 @@ type People struct {
 	Permission string
 }
 
+type AdminDetails struct {
+	Users []People
+	AdminName string
+}
+
 
 var DB *sql.DB
 func Connect() {

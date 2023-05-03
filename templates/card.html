@@ -1,0 +1,19 @@
+{% comment %}
+<div class="card">
+  <div class="card-header">{{.Name}}</div>
+  <div class="card-body">
+    <p class="card-text">Email: {{.Username}}</p>
+    <!-- Add more fields as needed -->
+  </div>
+</div>
+{% endcomment %} {{define "user-card"}}
+<div class="card ind-card" style="width: 20rem">
+  <div class="card-body">
+    <h5 class="card-title">{{.Name}}</h5>
+    <h6 class="card-subtitle mb-2 text-muted">{{.Username}}</h6>
+    <a href="/delete?username={{.Username}}" class="card-link">Update</a>
+
+    <a href="/delete?username={{.Username}}" class="card-link">Delete</a>
+  </div>
+</div>
+{{end}}
