@@ -2,6 +2,7 @@ package controller
 
 import (
 	// "database/sql"
+	// "context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -553,6 +554,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w,r,"/home",http.StatusSeeOther)
 		return
 	}
+
 
 	model.Tpl.ExecuteTemplate(w,"updatepage.html",userDetails)
 
