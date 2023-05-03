@@ -32,6 +32,11 @@ func main() {
 	r.HandleFunc("/delete",controller.DeleteUser).Methods("GET")
 	r.HandleFunc("/adminpanel",controller.AddUser).Methods("POST")
 
+	r.HandleFunc("/update",controller.UpdateUser).Methods("GET")
+	r.HandleFunc("/update",controller.UpdateUserReal).Methods("POST")
+
+	r.HandleFunc("/logout",controller.DeleteUser).Methods("GET")
+
 	http.ListenAndServe(":8080", r)
 
 

@@ -475,3 +475,98 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w,r,"adminpanel",http.StatusSeeOther)
 }
+
+// Update User
+
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("The code reached here")
+	user := r.URL.Query().Get("username")
+	if user == "" {
+		http.Redirect(w,r,"/adminpanel",http.StatusSeeOther)
+		return
+	}
+	tokenString, err := r.Cookie("jwt")
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	// Verify the token's signature.
+	token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
+		return []byte("secret-key"), nil // Replace with your own secret key
+	})
+	if err != nil {
+		  jwtCookie := &http.Cookie{
+			Name:     "jwt",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Unix(0, 0),
+			HttpOnly: true,
+	  }
+	  http.SetCookie(w, jwtCookie)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	// Extract the user's identity from the token.
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	username := claims["username"].(string)
+
+	// Check if the user is authorized to access the home page.
+	permission := isAuthorized(w,username)
+	
+	if permission == "user" {
+		http.Redirect(w,r,"/home",http.StatusSeeOther)
+		return
+	}
+
+	model.Tpl.ExecuteTemplate(w,"updatepage.html",user)
+
+}
+
+func UpdateUserReal(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("code reached here")
+	username := r.URL.Query().Get("username")
+	fmt.Println("code reached here")
+	err := r.ParseForm()
+	if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+	}
+
+	// Create new user from form data
+	user := model.People{
+			Name:  r.FormValue("name"),
+	}
+	fmt.Println("The code reached here")
+	// Insert new user into database
+	_, err = model.DB.Exec("UPDATE people SET name=$1 WHERE username=$2", user.Name, username)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Unable to update user: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Println("The code reached here")
+	http.Redirect(w,r,"/adminpanel",http.StatusSeeOther)
+}
+
+// logout
+
+func Logout() {
+
+	jwtCookie := &http.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+	}
+	http.SetCookie(w, jwtCookie)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return
+	
+}
