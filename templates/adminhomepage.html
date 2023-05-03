@@ -14,6 +14,7 @@
       .user-container {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
+        gap: 1fr;
       }
 
       .ind-card {
@@ -50,20 +51,24 @@
             <span class="navbar-brand mb-0 h1">{{.AdminName}}</span>
           </div>
         </nav> -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light navigation">
-          <a class="navbar-brand" href="#">{{.AdminName}}</a>
+        <nav
+          class="mb-4 navbar navbar-expand-lg navbar-light bg-light navigation"
+        >
+          <a class="navbar-brand" href="#">ADMIN NAME : {{.AdminName}}</a>
 
           <a class="nav-link" href="/logout"
             >Logout<span class="sr-only">(current)</span></a
           >
         </nav>
 
-        <div class="user-container">
+        <h3 class="mt-4">USER DETAILS</h3>
+
+        <div class="user-container mb-4">
           {{range .Users}} {{template "user-card" .}} {{end}}
         </div>
         <h3 class="mt-4">ADD USER</h3>
         <div class="form-container">
-          <form class="pt-5" method="post">
+          <form method="post">
             <div class="mb-3">
               <label for="exampleInputEmail1" class="form-label">Name</label>
               <input
@@ -96,6 +101,15 @@
                 class="form-control"
                 id="exampleInputPassword1"
               />
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                type="checkbox"
+                name="checkbox"
+                class="form-check-input"
+                id="exampleCheck1"
+              />
+              <label class="form-check-label" for="exampleCheck1">Admin</label>
             </div>
             <button type="submit" class="btn btn-primary">Add User</button>
           </form>

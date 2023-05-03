@@ -11,7 +11,9 @@
   <div class="card-body">
     <h5 class="card-title">{{.Name}}</h5>
     <h6 class="card-subtitle mb-2 text-muted">{{.Username}}</h6>
-    <a href="/update?username={{.Username}}" class="card-link">Update</a>
+    <a href="/update?username={{.Username}}&name={{.Name}}" class="card-link"
+      >Update</a
+    >
 
     <a href="/delete?username={{.Username}}" class="card-link">Delete</a>
   </div>

@@ -467,13 +467,19 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 	}
+	var permission string
+	if r.FormValue("checkbox") == "on" {
+		permission = "admin" 
+	} else {
+		permission = "user"
+	}
 
 	// Create new user from form data
 	user := model.People{
 			Name:  r.FormValue("name"),
 			Username : r.FormValue("username"),
 			Password : r.FormValue("password"),
-			Permission: "user",
+			Permission: permission,
 	}
 
 	// Insert new user into database
@@ -498,6 +504,13 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("The code reached here")
 	user := r.URL.Query().Get("username")
+	name := r.URL.Query().Get("name")
+
+	 userDetails :=  model.UserDetails {
+			Username: user,
+			Name: name,
+	 }
+
 	if user == "" {
 		http.Redirect(w,r,"/adminpanel",http.StatusSeeOther)
 		return
@@ -541,7 +554,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	model.Tpl.ExecuteTemplate(w,"updatepage.html",user)
+	model.Tpl.ExecuteTemplate(w,"updatepage.html",userDetails)
 
 }
 

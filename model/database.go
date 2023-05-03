@@ -20,6 +20,7 @@ type AdminDetails struct {
 
 type UserDetails struct {
 	Name string
+	Username string
 }
 
 
