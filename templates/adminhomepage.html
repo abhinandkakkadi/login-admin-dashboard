@@ -35,16 +35,27 @@
         text-align: center;
         font-weight: 700;
       }
+      .navigation {
+        display: flex;
+        justify-content: space-between;
+      }
     </style>
     <title>Document</title>
   </head>
   <body>
     <section class="navigation-bar">
       <div class="container">
-        <nav class="navbar navbar-light bg-light">
+        <!-- <nav class="navbar navbar-light bg-light">
           <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">{{.AdminName}}</span>
           </div>
+        </nav> -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light navigation">
+          <a class="navbar-brand" href="#">{{.AdminName}}</a>
+
+          <a class="nav-link" href="/logout"
+            >Logout<span class="sr-only">(current)</span></a
+          >
         </nav>
 
         <div class="user-container">

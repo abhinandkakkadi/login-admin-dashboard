@@ -18,6 +18,10 @@ type AdminDetails struct {
 	AdminName string
 }
 
+type UserDetails struct {
+	Name string
+}
+
 
 var DB *sql.DB
 func Connect() {

@@ -33,7 +33,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// signUP GET 
+// signUP GET to allow user to enter details
 func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
 	_, err := r.Cookie("jwt")
@@ -48,7 +48,7 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//  Home Handler users
+//  To check where to redirect based on user and admin
 
 func middleWare(w http.ResponseWriter, r *http.Request) {
 	tokenString, err := r.Cookie("jwt")
@@ -96,6 +96,7 @@ func middleWare(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
 	tokenString, err := r.Cookie("jwt")
@@ -136,7 +137,23 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w,r,"/adminpanel",http.StatusSeeOther)
 	} 
 
-	model.Tpl.ExecuteTemplate(w,"userhomepage.html",nil)
+	var userDetails model.UserDetails
+
+	// take admin name
+	sqlStatement := `SELECT name FROM people WHERE username=$1`
+	row := model.DB.QueryRow(sqlStatement, username)
+
+	// Scan the row into variables
+	err = row.Scan(&userDetails.Name)
+
+	if err != nil {
+    if err == sql.ErrNoRows {
+			http.Redirect(w,r,"/",http.StatusSeeOther)
+			return
+		} 
+	}
+
+	model.Tpl.ExecuteTemplate(w,"userhomepage.html",userDetails.Name)
 
 }
 
@@ -388,7 +405,7 @@ func AdminPanel(w http.ResponseWriter, r *http.Request) {
 // Delete User
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("code reached here")
+	fmt.Println("code reached here 10")
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
 	tokenString, err := r.Cookie("jwt")
 	if err != nil {
@@ -444,7 +461,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 // Add A new user by the admin
 
 func AddUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("code reached here")
+	fmt.Println("code reached here 1")
 	err := r.ParseForm()
 	if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -529,7 +546,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUserReal(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("code reached here")
+	fmt.Println("code reached here 2 ")
 	username := r.URL.Query().Get("username")
 	fmt.Println("code reached here")
 	err := r.ParseForm()
@@ -556,17 +573,16 @@ func UpdateUserReal(w http.ResponseWriter, r *http.Request) {
 
 // logout
 
-func Logout() {
-
-	jwtCookie := &http.Cookie{
-		Name:     "jwt",
-		Value:    "",
-		Path:     "/",
-		Expires:  time.Unix(0, 0),
-		HttpOnly: true,
-	}
-	http.SetCookie(w, jwtCookie)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-	return
-	
+func Logout(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("The logout called")
+	expired := time.Now().AddDate(0, 0, -1)
+    cookie := http.Cookie{
+        Name:     "jwt",
+        Value:    "",
+        Expires:  expired,
+        Path:     "/",
+        HttpOnly: true,
+    }
+    http.SetCookie(w, &cookie)
+    http.Redirect(w, r, "/", http.StatusSeeOther)
 }
