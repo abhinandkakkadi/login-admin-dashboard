@@ -6,13 +6,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 
 	"time"
-
+	"example.com/jwt-demo/middleware"
 	"example.com/jwt-demo/model"
 	"github.com/golang-jwt/jwt"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
+
+var errValue model.ErrorDetails
+
 
 // login GET HANDLER
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -25,11 +30,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Execute the template with the PageData struct as input
-	err = model.Tpl.ExecuteTemplate(w,"loginget.html", nil)
+	err = model.Tpl.ExecuteTemplate(w,"loginget.html",errValue)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	errValue.CommonError = ""
+
 
 }
 
@@ -41,11 +48,13 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 		middleWare(w,r)
 		return
 	}
-	err = model.Tpl.ExecuteTemplate(w,"signupget.html",nil )
+	err = model.Tpl.ExecuteTemplate(w,"signupget.html", errValue )
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	errValue.EmailError = ""
+	errValue.PasswordError = ""
 }
 
 //  To check where to redirect based on user and admin
@@ -59,7 +68,7 @@ func middleWare(w http.ResponseWriter, r *http.Request) {
 
 	// Verify the token's signature.
 	token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret-key"), nil // Replace with your own secret key
+		return []byte("secret-key"), nil 
 	})
 	if err != nil {
 		  jwtCookie := &http.Cookie{
@@ -99,6 +108,10 @@ func middleWare(w http.ResponseWriter, r *http.Request) {
 // 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
+	errValue.CommonError = ""
+	errValue.EmailError = ""
+	errValue.PasswordError = ""
+	errValue.NameError = ""
 	tokenString, err := r.Cookie("jwt")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -107,6 +120,10 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Verify the token's signature.
 	token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
+
+		if _,ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("there was an error in parsing")
+		}
 		return []byte("secret-key"), nil // Replace with your own secret key
 	})
 	if err != nil {
@@ -202,18 +219,26 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
     if err == sql.ErrNoRows {
+			errValue.EmailError = "user does not exist, signup"
 			http.Redirect(w,r,"/",http.StatusSeeOther)
 			return
 		} 
 	}
 
-	if username != user.Username || password != user.Password {
+	if username != user.Username {
+		errValue.EmailError = "email incorrect"
 		http.Redirect(w,r,"/",http.StatusSeeOther)
 		return
 	}
 
-	// ########
+	byteHash := []byte(password)
+    err = bcrypt.CompareHashAndPassword(byteHash, []byte(user.Password))
+    if err != nil {
+        errValue.PasswordError = "password incorrect"
+    }
 
+	// ########
+	middleware.CookieCreation(w,user.Username)
 	token := jwt.New(jwt.SigningMethodHS256)
   claims := token.Claims.(jwt.MapClaims)
   claims["username"] = user.Username
@@ -267,8 +292,49 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 			Name:  r.FormValue("name"),
 			Username : r.FormValue("username"),
 			Password : r.FormValue("password"),
+			CPassword: r.FormValue("cpassword"),
 			Permission: "user",
 	}
+
+	sqlStatement := `SELECT username FROM people WHERE username=$1`
+	row := model.DB.QueryRow(sqlStatement, user.Username)
+
+	// Scan the row into variables
+	var username string
+	err = row.Scan(&username)
+
+	if err == nil {
+    errValue.EmailError = "Email already exists" 
+		http.Redirect(w,r,"/signup",http.StatusSeeOther)
+		return
+	}
+
+		pattern := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
+    regex := regexp.MustCompile(pattern)
+    if !regex.MatchString(user.Username) {
+			errValue.EmailError = "Email not in the correct format"
+			http.Redirect(w,r,"/signup",http.StatusSeeOther)
+			return
+		}
+
+
+	if user.Password != user.CPassword {
+		errValue.PasswordError = "password does not match"
+		http.Redirect(w,r,"/signup",http.StatusSeeOther)
+		return
+	}
+
+	// encrypting password
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MinCost)
+    if err != nil {
+        log.Println(err)
+    }
+	user.Password = string(hash)
+
+
+	
+
+	// end of that checking 
 
 	// Insert new user into database
 	stmt, err := model.DB.Prepare("INSERT INTO people (name, username, password, permission) VALUES ($1, $2, $3, $4)")
@@ -314,6 +380,10 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 
 func AdminPanel(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
+	errValue.CommonError = ""
+	errValue.EmailError = ""
+	errValue.PasswordError = ""
+	errValue.NameError = ""
 	tokenString, err := r.Cookie("jwt")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -482,6 +552,13 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 			Permission: permission,
 	}
 
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MinCost)
+    if err != nil {
+        log.Println(err)
+    }
+	user.Password = string(hash)
+
+
 	// Insert new user into database
 	stmt, err := model.DB.Prepare("INSERT INTO people (name, username, password, permission) VALUES ($1, $2, $3, $4)")
 	if err != nil {
@@ -502,6 +579,7 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 // Update User
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
 	fmt.Println("The code reached here")
 	user := r.URL.Query().Get("username")
 	name := r.URL.Query().Get("name")

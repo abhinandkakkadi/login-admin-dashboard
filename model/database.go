@@ -10,6 +10,7 @@ type People struct {
 	Username string 
 	Name string
 	Password string
+	CPassword string
 	Permission string
 }
 
@@ -21,6 +22,13 @@ type AdminDetails struct {
 type UserDetails struct {
 	Name string
 	Username string
+}
+
+type ErrorDetails struct {
+	EmailError string
+	PasswordError string
+	NameError string
+	CommonError string
 }
 
 

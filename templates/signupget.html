@@ -48,13 +48,14 @@
               >Email address</label
             >
             <input
-              type="email"
+              type="text"
               name="username"
               class="form-control"
               id="exampleInputEmai21"
               aria-describedby="emailHelp"
             />
           </div>
+          {{.EmailError}}
           <div class="mb-3">
             <label for="exampleInputPassword1" class="form-label"
               >Password</label
@@ -66,6 +67,19 @@
               id="exampleInputPassword1"
             />
           </div>
+
+          <div class="mb-3">
+            <label for="exampleInputPassword2" class="form-label"
+              >Password</label
+            >
+            <input
+              type="password"
+              name="cpassword"
+              class="form-control"
+              id="exampleInputPassword2"
+            />
+          </div>
+          {{.PasswordError}}
           <div class="d-flex justify-content-between">
             <button type="submit" class="btn btn-primary">Sign Up</button>
             <a class="btn btn-primary" href="/">login</a>

@@ -28,7 +28,7 @@
       }
 
       body {
-        background: url(./golang.jpg);
+        background: url(/pxfuel.jpg);
         background-repeat: no-repeat;
         background-size: cover;
       }
@@ -50,6 +50,7 @@
               aria-describedby="emailHelp"
             />
           </div>
+          {{.EmailError}}
           <div class="mb-3">
             <label for="exampleInputPassword1" class="form-label"
               >Password</label
@@ -61,6 +62,7 @@
               id="exampleInputPassword1"
             />
           </div>
+          {{.PasswordError}}
 
           <div class="d-flex justify-content-between">
             <button type="submit" class="btn btn-primary">Login</button>
