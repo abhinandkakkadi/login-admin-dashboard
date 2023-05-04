@@ -9,6 +9,7 @@ import (
 	"regexp"
 
 	"time"
+
 	"example.com/jwt-demo/middleware"
 	"example.com/jwt-demo/model"
 	"github.com/golang-jwt/jwt"
@@ -23,14 +24,14 @@ var errValue model.ErrorDetails
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
 	// Create a new template with the name "home"
-	 _, err := r.Cookie("jwt")
-	if err == nil {
-		middleWare(w,r)
-		return
-	}
+	//  _, err := r.Cookie("jwt")
+	// if err == nil {
+	// 	middleWare(w,r)
+	// 	return
+	// }
 
 	// Execute the template with the PageData struct as input
-	err = model.Tpl.ExecuteTemplate(w,"loginget.html",errValue)
+	err := model.Tpl.ExecuteTemplate(w,"loginget.html",errValue)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -43,12 +44,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 // signUP GET to allow user to enter details
 func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
-	_, err := r.Cookie("jwt")
-	if err == nil {
-		middleWare(w,r)
-		return
-	}
-	err = model.Tpl.ExecuteTemplate(w,"signupget.html", errValue )
+	// _, err := r.Cookie("jwt")
+	// if err == nil {
+	// 	middleWare(w,r)
+	// 	return
+	// }
+	err := model.Tpl.ExecuteTemplate(w,"signupget.html", errValue )
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -108,10 +109,12 @@ func middleWare(w http.ResponseWriter, r *http.Request) {
 // 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
+
 	errValue.CommonError = ""
 	errValue.EmailError = ""
 	errValue.PasswordError = ""
 	errValue.NameError = ""
+
 	tokenString, err := r.Cookie("jwt")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -239,25 +242,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	// ########
 	middleware.CookieCreation(w,user.Username)
-	token := jwt.New(jwt.SigningMethodHS256)
-  claims := token.Claims.(jwt.MapClaims)
-  claims["username"] = user.Username
-  claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
-
-  // Generate signed token string
-  tokenString, err := token.SignedString([]byte("secret-key"))
-  if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
-  }
-
-  // Set JWT token in cookie
-  http.SetCookie(w, &http.Cookie{
-    Name:  "jwt",
-    Value: tokenString,
-    Path:  "/",
-  })
-	
 	permission := isAuthorized(w,username)
 
 	if permission == "user" {
@@ -275,11 +259,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func SignUp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
 
-	//  _, err := r.Cookie("jwt")
-	// if err == nil {
-	// 	middleWare(w,r)
-	// 	return
-	// }
+
 	// Parse form data
 	err := r.ParseForm()
 	if err != nil {
@@ -331,9 +311,6 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
     }
 	user.Password = string(hash)
 
-
-	
-
 	// end of that checking 
 
 	// Insert new user into database
@@ -350,27 +327,9 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 			return
 	}
 
-	token := jwt.New(jwt.SigningMethodHS256)
-  claims := token.Claims.(jwt.MapClaims)
-  claims["username"] = user.Username
-  claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
-
-  // Generate signed token string
-  tokenString, err := token.SignedString([]byte("secret-key"))
-  if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
-  }
-
-  // Set JWT token in cookie
-  http.SetCookie(w, &http.Cookie{
-    Name:  "jwt",
-    Value: tokenString,
-    Path:  "/",
-  })
-
-		
-		 http.Redirect(w,r,"/home",http.StatusSeeOther)
+	middleware.CookieCreation(w,user.Username)
+	
+	http.Redirect(w,r,"/home",http.StatusSeeOther)
 	// w.WriteHeader(http.StatusCreated)
 
 
@@ -385,42 +344,30 @@ func AdminPanel(w http.ResponseWriter, r *http.Request) {
 	errValue.PasswordError = ""
 	errValue.NameError = ""
 	tokenString, err := r.Cookie("jwt")
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+	// if err != nil {
+	// 	http.Redirect(w, r, "/", http.StatusSeeOther)
+	// 	return
+	// }
 
-	// Verify the token's signature.
+	// // Verify the token's signature.
 	token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret-key"), nil // Replace with your own secret key
 	})
-	if err != nil {
-		  jwtCookie := &http.Cookie{
-			Name:     "jwt",
-			Value:    "",
-			Path:     "/",
-			Expires:  time.Unix(0, 0),
-			HttpOnly: true,
-	  }
-	  http.SetCookie(w, jwtCookie)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	// Extract the user's identity from the token.
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+	
+	// // Extract the user's identity from the token.
+	claims, _ := token.Claims.(jwt.MapClaims)
+	// if !ok || !token.Valid {
+	// 	http.Redirect(w, r, "/", http.StatusSeeOther)
+	// 	return
+	// }
 	username := claims["username"].(string)
 
-	// Check if the user is authorized to access the home page.
-	permission := isAuthorized(w,username)
+	// // Check if the user is authorized to access the home page.
+	// permission := isAuthorized(w,username)
 	
-	if permission == "user" {
-		http.Redirect(w,r,"/home",http.StatusSeeOther)
-	}
+	// if permission == "user" {
+	// 	http.Redirect(w,r,"/home",http.StatusSeeOther)
+	// }
 
 	stmt, err := model.DB.Prepare("SELECT username,name FROM people where permission='user'")
     if err != nil {
@@ -576,11 +523,10 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w,r,"adminpanel",http.StatusSeeOther)
 }
 
-// Update User
-
+// update user page GET REQUEST
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
-	fmt.Println("The code reached here")
+	
 	user := r.URL.Query().Get("username")
 	name := r.URL.Query().Get("name")
 
@@ -636,10 +582,12 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
+
+
+//  update user POST REQUEST
 func UpdateUserReal(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("code reached here 2 ")
+
 	username := r.URL.Query().Get("username")
-	fmt.Println("code reached here")
 	err := r.ParseForm()
 	if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -658,12 +606,11 @@ func UpdateUserReal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("The code reached here")
 	http.Redirect(w,r,"/adminpanel",http.StatusSeeOther)
 }
 
-// logout
 
+//  logging out user and admin
 func Logout(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("The logout called")
 	expired := time.Now().AddDate(0, 0, -1)
