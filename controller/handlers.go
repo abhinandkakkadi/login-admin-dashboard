@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-
 	"time"
 
 	"example.com/jwt-demo/middleware"
@@ -23,13 +22,6 @@ var errValue model.ErrorDetails
 // login GET HANDLER
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
-	// Create a new template with the name "home"
-	//  _, err := r.Cookie("jwt")
-	// if err == nil {
-	// 	middleWare(w,r)
-	// 	return
-	// }
-
 	// Execute the template with the PageData struct as input
 	err := model.Tpl.ExecuteTemplate(w,"loginget.html",errValue)
 	if err != nil {
@@ -37,18 +29,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	errValue.CommonError = ""
-
-
 }
+
+
 
 // signUP GET to allow user to enter details
 func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
-	// _, err := r.Cookie("jwt")
-	// if err == nil {
-	// 	middleWare(w,r)
-	// 	return
-	// }
 	err := model.Tpl.ExecuteTemplate(w,"signupget.html", errValue )
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -60,140 +47,20 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 
 //  To check where to redirect based on user and admin
 
-func middleWare(w http.ResponseWriter, r *http.Request) {
-	tokenString, err := r.Cookie("jwt")
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
 
-	// Verify the token's signature.
-	token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret-key"), nil 
-	})
-	if err != nil {
-		  jwtCookie := &http.Cookie{
-			Name:     "jwt",
-			Value:    "",
-			Path:     "/",
-			Expires:  time.Unix(0, 0),
-			HttpOnly: true,
-	  }
-	  http.SetCookie(w, jwtCookie)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	// Extract the user's identity from the token.
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	username := claims["username"].(string)
-
-	// Check if the user is authorized to access the home page.
-	permission := isAuthorized(w,username)
-	
-	if permission == "user" {
-		http.Redirect(w,r,"/home",http.StatusSeeOther)
-		return
-	}
-
-	if permission == "admin" {
-		http.Redirect(w,r,"/adminpanel",http.StatusSeeOther)
-		return
-	}
-}
-
-// 
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
-
-	errValue.CommonError = ""
-	errValue.EmailError = ""
-	errValue.PasswordError = ""
-	errValue.NameError = ""
-
-	tokenString, err := r.Cookie("jwt")
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	// Verify the token's signature.
-	token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
-
-		if _,ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("there was an error in parsing")
-		}
-		return []byte("secret-key"), nil // Replace with your own secret key
-	})
-	if err != nil {
-		  jwtCookie := &http.Cookie{
-			Name:     "jwt",
-			Value:    "",
-			Path:     "/",
-			Expires:  time.Unix(0, 0),
-			HttpOnly: true,
-	  }
-	  http.SetCookie(w, jwtCookie)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	// Extract the user's identity from the token.
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	username := claims["username"].(string)
-
-	// Check if the user is authorized to access the home page.
-	permission := isAuthorized(w,username)
-	
-	if permission == "admin" {
-		http.Redirect(w,r,"/adminpanel",http.StatusSeeOther)
-	} 
-
-	var userDetails model.UserDetails
-
-	// take admin name
-	sqlStatement := `SELECT name FROM people WHERE username=$1`
+func isAuthorized(w http.ResponseWriter,username string) string  {
+	// Prepare the SQL statement
+	sqlStatement := `SELECT permission FROM people WHERE username=$1`
 	row := model.DB.QueryRow(sqlStatement, username)
 
 	// Scan the row into variables
-	err = row.Scan(&userDetails.Name)
-
+	var permission string
+	err := row.Scan(&permission)
 	if err != nil {
-    if err == sql.ErrNoRows {
-			http.Redirect(w,r,"/",http.StatusSeeOther)
-			return
-		} 
+    log.Fatal(err)
 	}
 
-	model.Tpl.ExecuteTemplate(w,"userhomepage.html",userDetails.Name)
-
-}
-
-
-
-func isAuthorized(w http.ResponseWriter,username string) string {
-	// Check if the user is authorized to access the home page.
-
-	// Prepare the SQL statement
-sqlStatement := `SELECT permission FROM people WHERE username=$1`
-row := model.DB.QueryRow(sqlStatement, username)
-
-// Scan the row into variables
-var permission string
-err := row.Scan(&permission)
-if err != nil {
-    log.Fatal(err)
-}
-
-return permission
+	return permission
 }
 
 
@@ -238,6 +105,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
     err = bcrypt.CompareHashAndPassword(byteHash, []byte(user.Password))
     if err != nil {
         errValue.PasswordError = "password incorrect"
+				http.Redirect(w,r,"/",http.StatusSeeOther)
+				return
     }
 
 	// ########
@@ -331,7 +200,77 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 	
 	http.Redirect(w,r,"/home",http.StatusSeeOther)
 	// w.WriteHeader(http.StatusCreated)
+}
 
+
+func HomeHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control","no-cache, no-store, must-revalidate")
+
+	errValue.CommonError = ""
+	errValue.EmailError = ""
+	errValue.PasswordError = ""
+	errValue.NameError = ""
+
+	tokenString, err := r.Cookie("jwt")
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	// Verify the token's signature.
+	token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
+
+		if _,ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("there was an error in parsing")
+		}
+		return []byte("secret-key"), nil // Replace with your own secret key
+	})
+	if err != nil {
+		  jwtCookie := &http.Cookie{
+			Name:     "jwt",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Unix(0, 0),
+			HttpOnly: true,
+	  }
+	  http.SetCookie(w, jwtCookie)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	// Extract the user's identity from the token.
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	username := claims["username"].(string)
+
+	// Check if the user is authorized to access the home page.
+	permission := isAuthorized(w,username)
+	
+	if permission == "admin" {
+		http.Redirect(w,r,"/adminpanel",http.StatusSeeOther)
+		return
+	} 
+
+	var userDetails model.UserDetails
+
+	// take admin name
+	sqlStatement := `SELECT name FROM people WHERE username=$1`
+	row := model.DB.QueryRow(sqlStatement, username)
+
+	// Scan the row into variables
+	err = row.Scan(&userDetails.Name)
+
+	if err != nil {
+    if err == sql.ErrNoRows {
+			http.Redirect(w,r,"/",http.StatusSeeOther)
+			return
+		} 
+	}
+
+	model.Tpl.ExecuteTemplate(w,"userhomepage.html",userDetails.Name)
 
 }
 
@@ -343,31 +282,16 @@ func AdminPanel(w http.ResponseWriter, r *http.Request) {
 	errValue.EmailError = ""
 	errValue.PasswordError = ""
 	errValue.NameError = ""
-	tokenString, err := r.Cookie("jwt")
-	// if err != nil {
-	// 	http.Redirect(w, r, "/", http.StatusSeeOther)
-	// 	return
-	// }
+	tokenString, _ := r.Cookie("jwt")
 
 	// // Verify the token's signature.
-	token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
+	token, _ := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret-key"), nil // Replace with your own secret key
 	})
-	
+
 	// // Extract the user's identity from the token.
 	claims, _ := token.Claims.(jwt.MapClaims)
-	// if !ok || !token.Valid {
-	// 	http.Redirect(w, r, "/", http.StatusSeeOther)
-	// 	return
-	// }
 	username := claims["username"].(string)
-
-	// // Check if the user is authorized to access the home page.
-	// permission := isAuthorized(w,username)
-	
-	// if permission == "user" {
-	// 	http.Redirect(w,r,"/home",http.StatusSeeOther)
-	// }
 
 	stmt, err := model.DB.Prepare("SELECT username,name FROM people where permission='user'")
     if err != nil {
@@ -390,7 +314,7 @@ func AdminPanel(w http.ResponseWriter, r *http.Request) {
 					panic(err)
 			}
 			users = append(users, user)
-	}
+		}
 
 	var adminDetails model.AdminDetails
 

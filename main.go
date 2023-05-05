@@ -20,14 +20,20 @@ import (
 func main() {
 	model.Connect()
 	r := mux.NewRouter()
+
 	userHandler := http.HandlerFunc(controller.LoginHandler)
 	adminHandler := http.HandlerFunc(controller.AdminPanel)
-	r.HandleFunc("/signup",controller.SignupHandler).Methods("GET")
+	signupHandler := http.HandlerFunc(controller.SignupHandler)
+
+
+	r.Handle("/signup",middleware.Auth(signupHandler)).Methods("GET")
+	// r.HandleFunc("/signup",controller.SignupHandler).Methods("GET")
 	r.HandleFunc("/signup",controller.SignUp).Methods("POST")
+
 	r.Handle("/", middleware.Auth(userHandler)).Methods("GET")
-	// r.HandleFunc("/", controller.LoginHandler).Methods("GET")
+
 	r.HandleFunc("/",controller.Login).Methods("POST")
-	
+
 	r.HandleFunc("/home",controller.HomeHandler).Methods("GET")
 
 	r.Handle("/adminpanel",middleware.AdminAuth(adminHandler)).Methods("GET")
